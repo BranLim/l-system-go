@@ -2,6 +2,10 @@ package main
 
 import (
 	"Coding_Night/painter"
+	"fmt"
+	"time"
+
+	"github.com/golang-collections/collections/stack"
 )
 
 func main() {
@@ -11,23 +15,44 @@ func main() {
 	if width < height {
 		size = width
 	} else {
-		size = height
+		size = height - 3
 	}
 	var mid = size / 2
 	paint.Clear()
 	paint.StartDrawing(size, 2)
-	var rules = BuildRules("A", "AB", "B", "A")
-	paint.DrawAlive('A', mid, 0)
-	for i := 1; i < 8; i++ {
-		var actual = rules.Produce("A", i)
-		var chars = len(actual)
+	var rules = BuildRules("1", "11", "0", "1[0]0")
+	var axiom = '0'
+	for i := 0; i < 6; i++ {
+		var stack = stack.New()
+		var actual = rules.Produce(string(axiom), i)
+		paint.StartDrawing(size, 2)
+		var point *painter.Point
+		paint.DrawText(1, 1, actual)
 		for k, symbol := range actual {
-			var x = mid - (chars / 2) + k
-			paint.DrawAlive(symbol, x, i)
+			if k == 0 {
+				point = painter.BuildPoint(symbol, mid, size-2, painter.N)
+
+			}
+
+			if symbol == '[' {
+				stack.Push(point)
+			} else if symbol == ']' {
+				point = stack.Pop().(*painter.Point)
+			} else if symbol == '0' {
+				point = point.Next(symbol)
+				paint.DrawPoint(point.AsRune(), point.X, point.Y)
+			} else {
+				paint.DrawPoint(point.AsRune(), point.X, point.Y)
+			}
+			point = point.Next(symbol)
+			paint.DrawText(180, k+1, fmt.Sprintf("%+v %c %c", point, point.AsRune(), symbol))
 		}
+		paint.DrawPoint(point.AsRune(), point.X, point.Y)
+		paint.EndDrawing()
+		time.Sleep(1 * time.Second)
+		paint.Clear()
 	}
-	paint.EndDrawing()
-	paint.DrawAlive(' ', 1, height)
+
 }
 
 type Rules struct {
