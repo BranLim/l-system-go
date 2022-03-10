@@ -2,11 +2,19 @@ package main
 
 import (
 	"Coding_Night/painter"
-	"fmt"
 	"time"
 
 	"github.com/golang-collections/collections/stack"
 )
+
+func produceTree(channel chan string) {
+	rules := BuildRules("1", "11", "0", "1[0]0")
+	axiom := '0'
+	for i := 0; i < 7; i++ {
+		channel <- rules.Produce(string(axiom), i)
+	}
+	close(channel)
+}
 
 func main() {
 	paint := painter.New()
@@ -20,39 +28,41 @@ func main() {
 	var mid = size / 2
 	paint.Clear()
 	paint.StartDrawing(size, 2)
-	var rules = BuildRules("1", "11", "0", "1[0]0")
-	var axiom = '0'
-	for i := 0; i < 6; i++ {
+	messages := make(chan string)
+	go produceTree(messages)
+
+	for actual := range messages {
 		var stack = stack.New()
-		var actual = rules.Produce(string(axiom), i)
+
 		paint.StartDrawing(size, 2)
-		var point *painter.Point
-		paint.DrawText(1, 1, actual)
-		for k, symbol := range actual {
-			if k == 0 {
-				point = painter.BuildPoint(symbol, mid, size-2, painter.N)
-
-			}
-
-			if symbol == '[' {
-				stack.Push(point)
-			} else if symbol == ']' {
-				point = stack.Pop().(*painter.Point)
-			} else if symbol == '0' {
-				point = point.Next(symbol)
-				paint.DrawPoint(point.AsRune(), point.X, point.Y)
-			} else {
-				paint.DrawPoint(point.AsRune(), point.X, point.Y)
-			}
-			point = point.Next(symbol)
-			paint.DrawText(180, k+1, fmt.Sprintf("%+v %c %c", point, point.AsRune(), symbol))
-		}
-		paint.DrawPoint(point.AsRune(), point.X, point.Y)
+		drawString(paint, actual, mid, size-2, stack)
 		paint.EndDrawing()
 		time.Sleep(1 * time.Second)
 		paint.Clear()
 	}
 
+}
+
+func drawString(paint *painter.Painter, actual string, initial_x int, initial_y int, stack *stack.Stack) {
+	var point *painter.Point
+	paint.DrawText(1, 1, actual)
+	for k, symbol := range actual {
+		if k == 0 {
+			point = painter.BuildPoint(symbol, initial_x, initial_y, painter.N)
+		}
+		if symbol == '[' {
+			stack.Push(point)
+		} else if symbol == ']' {
+			point = stack.Pop().(*painter.Point)
+		} else if symbol == '0' {
+			point = point.Next(symbol)
+			paint.DrawPoint(point.AsRune(), point.X, point.Y)
+		} else {
+			paint.DrawPoint(point.AsRune(), point.X, point.Y)
+		}
+		point = point.Next(symbol)
+	}
+	paint.DrawPoint(point.AsRune(), point.X, point.Y)
 }
 
 type Rules struct {
