@@ -10,7 +10,8 @@ import (
 func produceTree(channel chan string) {
 	rules := BuildRules("1", "11", "0", "1[0]0")
 	axiom := '0'
-	for i := 0; i < 7; i++ {
+	//should be 7 but the result is too big
+	for i := 0; i <= 6; i++ {
 		channel <- rules.Produce(string(axiom), i)
 	}
 	close(channel)
