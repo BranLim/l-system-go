@@ -2,7 +2,20 @@ package main
 
 import (
 	"Coding_Night/painter"
+	"time"
+
+	"github.com/golang-collections/collections/stack"
 )
+
+func produceTree(channel chan string) {
+	rules := BuildRules("1", "11", "0", "1[0]0")
+	axiom := '0'
+	//should be 7 but the result is too big
+	for i := 0; i <= 6; i++ {
+		channel <- rules.Produce(string(axiom), i)
+	}
+	close(channel)
+}
 
 func main() {
 	paint := painter.New()
@@ -11,23 +24,46 @@ func main() {
 	if width < height {
 		size = width
 	} else {
-		size = height
+		size = height - 3
 	}
 	var mid = size / 2
 	paint.Clear()
 	paint.StartDrawing(size, 2)
-	var rules = BuildRules("A", "AB", "B", "A")
-	paint.DrawAlive('A', mid, 0)
-	for i := 1; i < 8; i++ {
-		var actual = rules.Produce("A", i)
-		var chars = len(actual)
-		for k, symbol := range actual {
-			var x = mid - (chars / 2) + k
-			paint.DrawAlive(symbol, x, i)
-		}
+	messages := make(chan string)
+	go produceTree(messages)
+
+	for actual := range messages {
+		var stack = stack.New()
+
+		paint.StartDrawing(size, 2)
+		drawString(paint, actual, mid, size-2, stack)
+		paint.EndDrawing()
+		time.Sleep(1 * time.Second)
+		paint.Clear()
 	}
-	paint.EndDrawing()
-	paint.DrawAlive(' ', 1, height)
+
+}
+
+func drawString(paint *painter.Painter, actual string, initial_x int, initial_y int, stack *stack.Stack) {
+	var point *painter.Point
+	paint.DrawText(1, 1, actual)
+	for k, symbol := range actual {
+		if k == 0 {
+			point = painter.BuildPoint(symbol, initial_x, initial_y, painter.N)
+		}
+		if symbol == '[' {
+			stack.Push(point)
+		} else if symbol == ']' {
+			point = stack.Pop().(*painter.Point)
+		} else if symbol == '0' {
+			point = point.Next(symbol)
+			paint.DrawPoint(point.AsRune(), point.X, point.Y)
+		} else {
+			paint.DrawPoint(point.AsRune(), point.X, point.Y)
+		}
+		point = point.Next(symbol)
+	}
+	paint.DrawPoint(point.AsRune(), point.X, point.Y)
 }
 
 type Rules struct {

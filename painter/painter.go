@@ -1,8 +1,9 @@
 package painter
 
 import (
-	"github.com/gdamore/tcell/v2"
 	"log"
+
+	"github.com/gdamore/tcell/v2"
 )
 
 // Painter struct, contain the reference to the screen and other useful information
@@ -83,7 +84,7 @@ func (d *Painter) Clear() {
 }
 
 // DrawAlive draw an alive cell
-func (d *Painter) DrawAlive(r rune, x, y int) {
+func (d *Painter) DrawPoint(r rune, x, y int) {
 	d.drawSymbol(x, y, r, d.alive)
 }
 
@@ -101,7 +102,6 @@ func (d *Painter) DrawEmpty(x, y int) {
 //StartDrawing start an empty canvass read for the drawing
 func (d *Painter) StartDrawing(size, vOffset int) {
 	d.vOffset = vOffset
-	d.drawBox(0, vOffset, size, size+vOffset)
 }
 
 // EndDrawing show the changes
@@ -119,7 +119,7 @@ func (d *Painter) DrawText(x, y int, text string) {
 	}
 }
 
-// DrawTextHigh dsame as DrawText but with the same color as Alive
+// DrawTextHigh same as DrawText but with the same color as Alive
 func (d *Painter) DrawTextHigh(x, y int, text string) {
 	x = x + d.hOffset
 	for index, r := range []rune(text) {
